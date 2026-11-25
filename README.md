@@ -2,7 +2,7 @@
 
 A complete Google Sheets + Google Apps Script operational automation system built for **Allo Innoware (AI Operations / Founder's Office Assignment)**.
 
-- **Live Working Google Sheet Prototype (Viewer Link):** https://docs.google.com/spreadsheets/d/1Mf-hqpqJVbA2J7xLcSBNEG7gpQ3qCavj-3qFD0uJurg/edit?usp=sharing
+- **Live Working Google Sheet Prototype (Editor Access):** https://docs.google.com/spreadsheets/d/1Mf-hqpqJVbA2J7xLcSBNEG7gpQ3qCavj-3qFD0uJurg/edit?usp=sharing
 
 ## Architecture Diagram
 
@@ -28,9 +28,9 @@ flowchart TD
 1. **`Employee Dashboard`** — Single-point employee workspace (`Ticket ID`, `Completion Confirmation` checkbox, optional WhatsApp `Proof Link`, `Completion Notes`, `Submission Action`).
 2. **`Manager Dashboard`** — Centralized KPIs, employee-grouped summary, overdue watchlist, and Manager Acknowledgement controls.
 3. **`Task Master`** — Recurring task definitions (`TASK-001`..`TASK-004`), recurrence modes (`Completion Based` / `Fixed Schedule`), and proof rules.
-4. **`Cycle Log`** — Permanent non-destructive history of all cycles (`TASK-002-20261125-001`, etc.).
+4. **`Cycle Log`** — Permanent non-destructive history of all cycles (`TASK-002-20261123-001`, etc.).
 5. **`Alert Log`** — Deduplicated audit trail of all reminders, manager alerts, follow-ups, escalations, and resolution notices.
-6. **`Configuration`** — Central SLA timings, placeholder emails, working days, holidays, and `Test Mode Enabled` / `Email Notifications Enabled` switches.
+6. **`Configuration`** — Central SLA timings, placeholder emails, working days, holidays, `Test Mode Enabled` / `Email Notifications Enabled` switches, and an inline Evaluator Testing Guide (`A26:F29`).
 7. **`Test Results`** — Generated automatically by [`TestRunner.gs`](appsscript/TestRunner.gs).
 
 ## Project Structure

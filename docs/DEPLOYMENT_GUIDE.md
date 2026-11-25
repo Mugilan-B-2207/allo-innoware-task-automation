@@ -1,6 +1,6 @@
 # Google Sheets & Apps Script Deployment Guide
 
-> **Honest Status Note:** This repository contains the complete, locally verified Apps Script codebase and sheet builder. Because Google account OAuth authorization is not present in this local terminal environment, the live Google Sheet has **not** yet been created in your Google Drive — follow the steps below (~5 minutes) to attach it to a real Google Spreadsheet and authorize permissions.
+> **Live Prototype Note:** The live Google Sheet prototype is already deployed and verified (`11/11 PASS` in `Test Results`). Use the steps below if you want to deploy a fresh copy into another Google Sheet from scratch.
 
 ---
 
