@@ -188,6 +188,21 @@ function setupConfigurationSheet(sheet) {
   sheet.setColumnWidths(4, 1, 30);
   sheet.setColumnWidths(5, 1, 130);
   sheet.setColumnWidths(6, 1, 240);
+
+  // Evaluator Testing & Trigger Documentation Box
+  sheet.getRange('A26:F26').merge()
+    .setValue('EVALUATOR TESTING GUIDE — LIVE EMAILS, TRIGGERS & TEST SUITE')
+    .setBackground('#e8f0fe').setFontColor('#1967d2').setFontWeight('bold');
+  const notes = [
+    ['1. Live Email Test:', 'Replace Manager Email (B7), Leadership Email (B8), and Task Master!E5:E8 placeholder @example.com emails with your test email; set Email Notifications Enabled (B21) = TRUE and Test Mode Enabled (B22) = FALSE; then run Allo Operations -> Run Alert Check.'],
+    ['2. Automated Triggers:', 'Run Allo Operations -> Install Automation Triggers to attach onSheetEditTrigger (onEdit), scheduledMorningCycleJob (08:45), scheduledEmployeeReminderJob (09:00), and scheduledQuarterHourMonitorJob (every 15 mins). Safe to run twice (zero duplicates).'],
+    ['3. Automated Tests 1–8:', 'Run Allo Operations -> Run Test Cases to execute all 11 deterministic tests (TEST-01..08 + EDGE-01..03) and populate the Test Results tab.']
+  ];
+  sheet.getRange('A27:A29').setValues(notes.map(n => [n[0]])).setFontWeight('bold').setBackground('#f8f9fa');
+  notes.forEach((n, i) => {
+    sheet.getRange(27 + i, 2, 1, 5).merge().setValue(n[1]).setWrap(true).setBackground('#f8f9fa');
+    sheet.setRowHeight(27 + i, 30);
+  });
 }
 
 function setupTaskMasterSheet(sheet, today) {
@@ -284,13 +299,13 @@ function setupEmployeeDashboardSheet(sheet) {
 
   sheet.getRange('A3').setValue('PENDING:').setFontWeight('bold').setFontColor('#1967d2');
   sheet.getRange('B3').setFormula(`=COUNTIF(G${ED_START_ROW}:G,"Pending")`).setFontWeight('bold').setFontColor('#1967d2');
-  sheet.getRange('C3').setValue('OVERDUE:').setFontWeight('bold').setFontColor('#c5221f');
-  sheet.getRange('D3').setFormula(`=COUNTIF(G${ED_START_ROW}:G,"Overdue")`).setFontWeight('bold').setFontColor('#c5221f');
+  sheet.getRange('C3').setValue('TOTAL OVERDUE:').setFontWeight('bold').setFontColor('#c5221f');
+  sheet.getRange('D3').setFormula(`=COUNTIF(G${ED_START_ROW}:G,"Overdue")+COUNTIF(G${ED_START_ROW}:G,"Acknowledged")+COUNTIF(G${ED_START_ROW}:G,"Escalated")`).setFontWeight('bold').setFontColor('#c5221f');
   sheet.getRange('E3').setValue('ACKNOWLEDGED:').setFontWeight('bold').setFontColor('#b06000');
   sheet.getRange('F3').setFormula(`=COUNTIF(G${ED_START_ROW}:G,"Acknowledged")`).setFontWeight('bold').setFontColor('#b06000');
   sheet.getRange('G3').setValue('ESCALATED:').setFontWeight('bold').setFontColor('#a50e0e');
   sheet.getRange('H3').setFormula(`=COUNTIF(G${ED_START_ROW}:G,"Escalated")`).setFontWeight('bold').setFontColor('#a50e0e');
-  sheet.getRange('I3:P3').merge().setValue('Workflow: Enter proof in Col J–M -> Select "Submit Completion" in Col P (or use Allo Operations menu).')
+  sheet.getRange('I3:P3').merge().setValue('Filter Col D for your name (or Data > Filter views). Enter proof in Col J-M -> select "Submit Completion" in Col P.')
     .setFontStyle('italic').setFontColor('#5f6368');
 
   const headers = [
@@ -363,7 +378,7 @@ function setupManagerDashboardSheet(sheet) {
   );
 
   const kpiHeaders = [
-    'Total Active Tasks', 'Tasks Pending', 'Tasks Overdue',
+    'Total Active Tasks', 'Tasks Pending', 'Tasks Overdue (Total)',
     'Completed Today', 'Awaiting Manager Ack', 'Escalated to Leadership'
   ];
   sheet.getRange(4, 1, 1, 6).setValues([kpiHeaders])
@@ -414,7 +429,6 @@ function setupAlertLogSheet(sheet) {
     'Alert Subject', 'Alert Sent At', 'Alert Status', 'Acknowledged', 'Acknowledged At', 'Error Message'
   ];
   styleTableHeaders(sheet, AL_HEADER_ROW, headers, '#bf360c');
-  sheet.getRange(AL_START_ROW, AL_COLS.ACKNOWLEDGED, 200, 1).insertCheckboxes();
   sheet.setColumnWidths(1, AL_COL_COUNT, 150);
   sheet.setColumnWidths(6, 2, 230);
   sheet.setColumnWidths(12, 1, 220);

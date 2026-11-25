@@ -10,7 +10,8 @@ function assertCondition(cond, msg) {
 
 function runAllTestCases() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const baseTime = new Date(2026, 10, 25, 10, 0, 0); // Wed 2026-11-25 10:00 IST
+  // Anchor baseline to Mon 2026-11-23 so overdue/escalated test cycles have realistic >0 Days Overdue & past timestamps
+  const baseTime = new Date(2026, 10, 23, 10, 0, 0); // Mon 2026-11-23 10:00 IST
   initializeSystem(baseTime);
   setConfigSetting(ss, 'Test Mode Enabled', 'TRUE');
   setConfigSetting(ss, 'Email Notifications Enabled', 'TRUE');
@@ -39,13 +40,13 @@ function runAllTestCases() {
       ed.getRange(r, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
 
       const res = handleEmployeeDashboardEdit(ss, ed, r, ED_COLS.SUBMISSION_ACTION, {
-        now: new Date(2026, 10, 25, 14, 0, 0),
+        now: new Date(2026, 10, 23, 14, 0, 0),
         actor: 'employee.b.placeholder@example.com'
       });
       assertCondition(res && res.ok, `Completion failed: ${res && res.error}`);
-      assertCondition(res.nextDueDate === '2026-12-02', `Expected 2026-12-02, got ${res.nextDueDate}`);
+      assertCondition(res.nextDueDate === '2026-11-30', `Expected 2026-11-30, got ${res.nextDueDate}`);
       const nextCycle = getAllCycles(ss).find(c => c.taskId === 'TASK-002' && c.status === CYCLE_STATUS.PENDING);
-      assertCondition(Boolean(nextCycle) && formatYMD(nextCycle.dueDate) === '2026-12-02', 'Next cycle must be Pending for 2026-12-02');
+      assertCondition(Boolean(nextCycle) && formatYMD(nextCycle.dueDate) === '2026-11-30', 'Next cycle must be Pending for 2026-11-30');
       return `Closed ${res.cycleId} at ${res.completedAt}; generated ${nextCycle.cycleId} due ${res.nextDueDate}.`;
     }
   );
@@ -63,7 +64,7 @@ function runAllTestCases() {
       ed.getRange(r, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
 
       const res = handleEmployeeDashboardEdit(ss, ed, r, ED_COLS.SUBMISSION_ACTION, {
-        now: new Date(2026, 10, 25, 15, 0, 0),
+        now: new Date(2026, 10, 23, 15, 0, 0),
         actor: 'employee.c.placeholder@example.com'
       });
       assertCondition(res && res.ok, `Single-point submission failed: ${res && res.error}`);
@@ -89,12 +90,12 @@ function runAllTestCases() {
       ed.getRange(r, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
 
       const res = handleEmployeeDashboardEdit(ss, ed, r, ED_COLS.SUBMISSION_ACTION, {
-        now: new Date(2026, 10, 25, 16, 30, 0),
+        now: new Date(2026, 10, 23, 16, 30, 0),
         actor: 'employee.a.placeholder@example.com'
       });
       assertCondition(res && res.ok, `Daily completion failed: ${res && res.error}`);
-      assertCondition(res.nextDueDate === '2026-11-26', `Expected next working day 2026-11-26, got ${res.nextDueDate}`);
-      return `Confirmed ${res.cycleId} without Ticket ID at ${res.completedAt}; spawned next working-day cycle due 2026-11-26.`;
+      assertCondition(res.nextDueDate === '2026-11-24', `Expected next working day 2026-11-24, got ${res.nextDueDate}`);
+      return `Confirmed ${res.cycleId} without Ticket ID at ${res.completedAt}; spawned next working-day cycle due 2026-11-24.`;
     }
   );
 
@@ -104,19 +105,17 @@ function runAllTestCases() {
     'Same-Day Manager Alert & Email Enabled Check',
     'TASK-004 crosses 17:00 deadline -> Overdue at 17:05 -> Manager First Alert logged at 17:20; skipped when disabled.',
     () => {
-      // First verify disabled email toggle logs SKIPPED_DISABLED
       setConfigSetting(ss, 'Test Mode Enabled', 'FALSE');
       setConfigSetting(ss, 'Email Notifications Enabled', 'FALSE');
-      const disabledRes = runAlertAndEscalationCheck(new Date(2026, 10, 25, 17, 20, 0));
+      const disabledRes = runAlertAndEscalationCheck(new Date(2026, 10, 23, 17, 20, 0));
       assertCondition(disabledRes.mgrFirstAlerts === 0, 'Must not send when Email Notifications Enabled is FALSE');
 
-      // Reset Manager Alert Sent At on TASK-004 cycle, enable Test Mode & Email Notifications, and re-run
       const c4 = getAllCycles(ss).find(c => c.taskId === 'TASK-004' && isActiveCycleStatus(c.status));
       ss.getSheetByName(SHEET_NAMES.CYCLE_LOG).getRange(c4.row, CL_COLS.MGR_ALERT_SENT_AT).setValue('');
       setConfigSetting(ss, 'Test Mode Enabled', 'TRUE');
       setConfigSetting(ss, 'Email Notifications Enabled', 'TRUE');
 
-      const enabledRes = runAlertAndEscalationCheck(new Date(2026, 10, 25, 17, 20, 0));
+      const enabledRes = runAlertAndEscalationCheck(new Date(2026, 10, 23, 17, 20, 0));
       assertCondition(enabledRes.mgrFirstAlerts === 1, `Expected 1 Manager First Alert, got ${enabledRes.mgrFirstAlerts}`);
       const updatedC4 = getAllCycles(ss).find(c => c.cycleId === c4.cycleId);
       assertCondition(updatedC4.status === CYCLE_STATUS.OVERDUE && Boolean(updatedC4.mgrAlertSentAt), 'TASK-004 must be Overdue with Manager Alert Sent At');
@@ -135,10 +134,10 @@ function runAllTestCases() {
       assertCondition(mdRow > 0, 'TASK-004 must appear on Manager Dashboard');
 
       const ackRes = acknowledgeCycle(ss, mdRow, {
-        now: new Date(2026, 10, 25, 18, 0, 0),
+        now: new Date(2026, 10, 23, 18, 0, 0),
         ackBy: 'manager.placeholder@example.com',
         ackNotes: 'Pinged Employee D; awaiting portal ticket.',
-        expectedResolutionDate: '2026-11-26'
+        expectedResolutionDate: '2026-11-24'
       });
       assertCondition(ackRes.ok, `Acknowledgement failed: ${ackRes.error}`);
       const c4 = getAllCycles(ss).find(c => c.cycleId === ackRes.cycleId);
@@ -153,66 +152,58 @@ function runAllTestCases() {
     'Leadership Escalation (>24h After Manager Alert)',
     'Escalates unresolved task >24h after Manager Alert with reason; completed tasks are never escalated.',
     () => {
-      const escRes = runAlertAndEscalationCheck(new Date(2026, 10, 26, 17, 25, 0)); // 24h05m after 17:20
+      const escRes = runAlertAndEscalationCheck(new Date(2026, 10, 24, 17, 25, 0)); // 24h05m after 2026-11-23 17:20
       assertCondition(escRes.leadershipEscalations === 1, `Expected 1 leadership escalation for TASK-004, got ${escRes.leadershipEscalations}`);
       const c4 = getAllCycles(ss).find(c => c.taskId === 'TASK-004' && isActiveCycleStatus(c.status));
       assertCondition(c4.status === CYCLE_STATUS.ESCALATED && Boolean(c4.leadEscAt), 'TASK-004 must be Escalated with Leadership Escalated At');
 
-      // Verify already-completed TASK-002 / TASK-003 were NOT escalated
       const completedEscalated = getAllCycles(ss).filter(c => c.status === CYCLE_STATUS.COMPLETED && c.leadEscAt);
       assertCondition(completedEscalated.length === 0, 'Completed tasks must never be escalated');
       return `Escalated ${c4.cycleId} at ${formatTimestamp(c4.leadEscAt)} (>24h SLA); verified 0 completed tasks escalated.`;
     }
   );
 
-  // TEST 7: Full Escalation Timing Lifecycle (weekday-to-weekday: Tue 2026-12-01 -> Wed 2026-12-02)
+  // TEST 7: Full Escalation Timing Lifecycle (Wed 2026-11-25 -> Thu 2026-11-26)
   runTest(
     'TEST-07',
     'Full SLA Timing Progression (Reminder -> Overdue -> Mgr Alert -> Follow-up -> Leadership -> Resolution)',
     'Each SLA phase fires only in its exact configured window.',
     () => {
-      // Advance TASK-001 cleanly to Tue 2026-12-01 (Cycle 5) so we observe exact 16.75h weekday Follow-up before 24h SLA
+      // Close Cycle 2 (alerted during TEST-06) so Cycle 3 spawns cleanly for Wed 2026-11-25
       const ed = ss.getSheetByName(SHEET_NAMES.EMP_DASHBOARD);
-      const advanceDates = [
-        new Date(2026, 10, 26, 17, 35, 0), // closes Cycle 2 -> spawns Fri 2026-11-27
-        new Date(2026, 10, 27, 17, 35, 0), // closes Cycle 3 -> spawns Mon 2026-11-30
-        new Date(2026, 10, 30, 17, 35, 0)  // closes Cycle 4 -> spawns Tue 2026-12-01
-      ];
-      advanceDates.forEach(dt => {
-        const row = findDashboardRowByTask(ed, 'TASK-001');
-        ed.getRange(row, ED_COLS.CONFIRMATION).setValue(true);
-        ed.getRange(row, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
-        const adv = handleEmployeeDashboardEdit(ss, ed, row, ED_COLS.SUBMISSION_ACTION, {
-          now: dt,
-          actor: 'employee.a.placeholder@example.com'
-        });
-        assertCondition(adv && adv.ok, 'Advancing TASK-001 to Tue 2026-12-01 failed');
+      const rCycle2 = findDashboardRowByTask(ed, 'TASK-001');
+      ed.getRange(rCycle2, ED_COLS.CONFIRMATION).setValue(true);
+      ed.getRange(rCycle2, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
+      const close2 = handleEmployeeDashboardEdit(ss, ed, rCycle2, ED_COLS.SUBMISSION_ACTION, {
+        now: new Date(2026, 10, 24, 17, 35, 0),
+        actor: 'employee.a.placeholder@example.com'
       });
+      assertCondition(close2 && close2.ok && close2.nextDueDate === '2026-11-25', 'Cycle 3 must spawn for 2026-11-25');
 
-      // 1. 09:05 on Tue 2026-12-01 -> Employee Reminder
-      const rRem = runAlertAndEscalationCheck(new Date(2026, 11, 1, 9, 5, 0));
+      // 1. 09:05 on Wed 2026-11-25 -> Employee Reminder
+      const rRem = runAlertAndEscalationCheck(new Date(2026, 10, 25, 9, 5, 0));
       assertCondition(rRem.reminders >= 1, 'Expected Employee Reminder at 09:05');
 
       // 2. 16:00 (Before deadline) -> still Pending, 0 Manager alerts
-      const rPre = runAlertAndEscalationCheck(new Date(2026, 11, 1, 16, 0, 0));
+      const rPre = runAlertAndEscalationCheck(new Date(2026, 10, 25, 16, 0, 0));
       assertCondition(rPre.mgrFirstAlerts === 0, 'Must not send Manager alert before 17:00 deadline');
 
       // 3. 17:05 (Immediately after 17:00 deadline) -> Overdue, 0 Manager alerts (before 17:15)
-      const rAfter = runAlertAndEscalationCheck(new Date(2026, 11, 1, 17, 5, 0));
+      const rAfter = runAlertAndEscalationCheck(new Date(2026, 10, 25, 17, 5, 0));
       assertCondition(rAfter.mgrFirstAlerts === 0, 'Must wait until 17:15 (deadline + 15m)');
-      const c5 = getAllCycles(ss).find(c => c.taskId === 'TASK-001' && isActiveCycleStatus(c.status));
-      assertCondition(c5.status === CYCLE_STATUS.OVERDUE, 'Status must turn Overdue at 17:05');
+      const c3 = getAllCycles(ss).find(c => c.taskId === 'TASK-001' && isActiveCycleStatus(c.status));
+      assertCondition(c3.status === CYCLE_STATUS.OVERDUE, 'Status must turn Overdue at 17:05');
 
       // 4. 17:20 -> Manager First Alert
-      const rL1 = runAlertAndEscalationCheck(new Date(2026, 11, 1, 17, 20, 0));
+      const rL1 = runAlertAndEscalationCheck(new Date(2026, 10, 25, 17, 20, 0));
       assertCondition(rL1.mgrFirstAlerts === 1, 'Expected Manager First Alert at 17:20');
 
-      // 5. Next working day 10:05 (Wed 2026-12-02, 16.75h after L1) -> Manager Follow-up, BEFORE Leadership Escalation
-      const rFollow = runAlertAndEscalationCheck(new Date(2026, 11, 2, 10, 5, 0));
+      // 5. Next working day 10:05 (Thu 2026-11-26, 16.75h after L1) -> Manager Follow-up, BEFORE Leadership Escalation
+      const rFollow = runAlertAndEscalationCheck(new Date(2026, 10, 26, 10, 5, 0));
       assertCondition(rFollow.mgrFollowups === 1 && rFollow.leadershipEscalations === 0, '10:05 next working day should send Follow-up, not Leadership yet');
 
       // 6. Next working day 14:05 (4h after unacked 10:00 deadline) -> Early Leadership Escalation
-      const rLead = runAlertAndEscalationCheck(new Date(2026, 11, 2, 14, 5, 0));
+      const rLead = runAlertAndEscalationCheck(new Date(2026, 10, 26, 14, 5, 0));
       assertCondition(rLead.leadershipEscalations === 1, 'Expected early Leadership Escalation at 14:05 when unacked');
 
       // 7. Complete TASK-001 -> triggers Completion Notification & closes cycle
@@ -220,11 +211,11 @@ function runAllTestCases() {
       ed.getRange(r, ED_COLS.CONFIRMATION).setValue(true);
       ed.getRange(r, ED_COLS.SUBMISSION_ACTION).setValue(SUBMISSION_ACTIONS.SUBMIT);
       const compRes = handleEmployeeDashboardEdit(ss, ed, r, ED_COLS.SUBMISSION_ACTION, {
-        now: new Date(2026, 11, 2, 14, 30, 0),
+        now: new Date(2026, 10, 26, 14, 30, 0),
         actor: 'employee.a.placeholder@example.com'
       });
       assertCondition(compRes && compRes.ok, 'Post-escalation completion should succeed');
-      return `Verified 7-stage lifecycle on ${c5.cycleId}: 09:05 Reminder -> 16:00 Pending -> 17:05 Overdue -> 17:20 Mgr Alert -> 10:05 Follow-up -> 14:05 Leadership Esc -> 14:30 Resolved.`;
+      return `Verified 7-stage lifecycle on ${c3.cycleId}: 09:05 Reminder -> 16:00 Pending -> 17:05 Overdue -> 17:20 Mgr Alert -> 10:05 Follow-up -> 14:05 Leadership Esc -> 14:30 Resolved.`;
     }
   );
 
@@ -237,16 +228,15 @@ function runAllTestCases() {
       const cycleCountBefore = getAllCycles(ss).length;
       const alertCountBefore = ss.getSheetByName(SHEET_NAMES.ALERT_LOG).getLastRow();
 
-      generateDueCycles(new Date(2026, 11, 2, 15, 0, 0));
-      generateDueCycles(new Date(2026, 11, 2, 15, 15, 0));
-      const a1 = runAlertAndEscalationCheck(new Date(2026, 11, 2, 15, 0, 0));
-      const a2 = runAlertAndEscalationCheck(new Date(2026, 11, 2, 15, 15, 0));
+      generateDueCycles(new Date(2026, 10, 26, 15, 0, 0));
+      generateDueCycles(new Date(2026, 10, 26, 15, 15, 0));
+      const a1 = runAlertAndEscalationCheck(new Date(2026, 10, 26, 15, 0, 0));
+      const a2 = runAlertAndEscalationCheck(new Date(2026, 10, 26, 15, 15, 0));
 
       assertCondition(getAllCycles(ss).length === cycleCountBefore, 'No duplicate cycles allowed');
       assertCondition(ss.getSheetByName(SHEET_NAMES.ALERT_LOG).getLastRow() === alertCountBefore, 'No duplicate alerts allowed');
       assertCondition(a1.mgrFirstAlerts === 0 && a2.mgrFirstAlerts === 0 && a1.leadershipEscalations === 0, 'Repeated runs must send 0 new alerts');
 
-      // Trigger idempotency check
       const t1 = installProjectTriggers();
       const t2 = installProjectTriggers();
       assertCondition(t1.totalTriggers === t2.totalTriggers && t2.added === 0, 'installProjectTriggers twice must add 0 duplicate triggers');
@@ -293,12 +283,10 @@ function runAllTestCases() {
       ed.getRange(r2, ED_COLS.TICKET_ID).setValue('');
       ed.getRange(r2, ED_COLS.NOTES).setValue('');
 
-      // Check duplicate completion check directly against an already-completed cycle
       const completedCycle = getAllCycles(ss).find(c => c.status === CYCLE_STATUS.COMPLETED);
       ed.getRange(r2, ED_COLS.CYCLE_ID).setValue(completedCycle.cycleId);
       const dupRes = submitEmployeeCompletion(ss, r2, { now: new Date() });
       assertCondition(!dupRes.ok && dupRes.error.includes('already completed'), 'Duplicate submission must be blocked');
-      refreshAllDashboards(new Date(2026, 10, 27, 15, 0, 0));
       return 'Blocked cross-employee submission (Employee C -> TASK-002) and duplicate Cycle ID completion.';
     }
   );
@@ -309,9 +297,8 @@ function runAllTestCases() {
     'Skips weekends/holidays on Daily recurrence; handles Jan 31 + 30d; skips inactive task; logs FAILED on missing email.',
     () => {
       const cfg = getConfig(ss);
-      cfg.holidays = ['2026-11-30']; // Suppose Mon Nov 30 is a holiday
+      cfg.holidays = ['2026-11-30'];
       const dailyTask = getTasksFromMaster(ss).find(t => t.taskId === 'TASK-001');
-      // Friday Nov 27 -> skips Sat Nov 28, Sun Nov 29, Holiday Mon Nov 30 -> Tue Dec 01!
       const nextDaily = calculateNextDueDate(dailyTask, new Date(2026, 10, 27, 16, 0, 0), new Date(2026, 10, 27), cfg);
       assertCondition(formatYMD(nextDaily) === '2026-12-01', `Expected 2026-12-01 skipping weekend+holiday, got ${formatYMD(nextDaily)}`);
 
@@ -319,7 +306,6 @@ function runAllTestCases() {
       const jan31Plus30 = calculateNextDueDate(monthlyTask, new Date(2026, 0, 31, 12, 0, 0), new Date(2026, 0, 31), cfg);
       assertCondition(formatYMD(jan31Plus30) === '2026-03-02', `Expected 2026-03-02 for Jan 31 + 30d, got ${formatYMD(jan31Plus30)}`);
 
-      // Missing email configuration check
       const badEmailRes = dispatchAlert(ss, cfg, {
         cycleId: 'TEST-MISSING-EMAIL',
         taskId: 'TASK-004',
@@ -327,11 +313,10 @@ function runAllTestCases() {
         alertType: ALERT_TYPES.EMP_REMINDER,
         recipientEmail: '',
         subject: 'Missing Email Test',
-        now: new Date(2026, 10, 27, 15, 0, 0)
+        now: new Date(2026, 10, 25, 12, 0, 0)
       });
       assertCondition(!badEmailRes.sent && badEmailRes.status === 'FAILED', 'Empty recipient must log FAILED cleanly without throwing');
 
-      // Inactive task check
       const tm = ss.getSheetByName(SHEET_NAMES.TASK_MASTER);
       tm.getRange(TM_START_ROW, TM_COLS.ACTIVE).setValue(false);
       const tasksAfter = getTasksFromMaster(ss);
@@ -342,6 +327,8 @@ function runAllTestCases() {
     }
   );
 
+  // Refresh dashboards using real current date so Days Overdue on TASK-004 (due 2026-11-23) renders realistically (>0)
+  refreshAllDashboards(new Date());
   writeTestResultsSheet(ss, rows);
   return rows;
 }
